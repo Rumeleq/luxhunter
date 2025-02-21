@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-__author__ = 'arturc'
 import luxhunter
 import argparse
 from lxml import etree
@@ -25,7 +23,7 @@ def download_ids(session):
 
     # (2) for each city get clinic
     clinics = dict()
-    for k, v in cities.iteritems():
+    for k, v in cities.items():
         # params['cityId'] = v
         ids_new_url = ids_url.format(v, '', '')
         r = session.post(ids_new_url)
@@ -40,7 +38,7 @@ def download_ids(session):
 
     # (3) for each clinic in Warsaw get service
     services = dict()
-    for k, v in clinics.iteritems():
+    for k, v in clinics.items():
         ids_new_url = ids_url.format('1', v, '')
         r = session.post(ids_new_url)
 

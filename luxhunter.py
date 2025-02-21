@@ -1,5 +1,7 @@
 import requests
 import codecs
+
+from bs4 import BeautifulSoup
 from lxml import etree
 import smtplib
 import string
@@ -39,26 +41,59 @@ def write_to_file(text, file_path='log.txt'):
         f.write(text)
 
 
-def log_in(login, password):
+def log_in(luxmed_login: str, luxmed_password: str):
     """
-    Login to Luxmed's patient portal
-    :param login: Luxmed account login. Usually e-mail address.
-    :param password: You know...
-    :return: Session object.
-    """
-    log_in_params = {'Login': login, 'Password': password}
-    s = requests.Session()
-    s.headers.update({'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:37.0) Gecko/20100101 Firefox/37.0'})
-    s.headers.update({'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'})
-    s.headers.update({'Referer': 'https://portalpacjenta.luxmed.pl/PatientPortal/Account/LogOn'})
-    s.cookies.update({'LXCookieMonit': '1'})
-    r = s.post('https://portalpacjenta.luxmed.pl/PatientPortal/Account/LogIn', data=log_in_params)
+    Log in to Luxmed's patient portal.
 
-    if 'Zarezerwuj' in r.text:
-        print('Login succeed')
-        return s
-    else:
-        print('Login failed')
+    :param luxmed_login: Luxmed account login (usually an email address).
+    :param luxmed_password: Luxmed account password.
+    :return: Session object if login is successful, None otherwise.
+    """
+    login_page_url = 'https://portalpacjenta.luxmed.pl/PatientPortal/NewPortal/Page/Account/Login'
+    authentication_url = 'https://portalpacjenta.luxmed.pl/PatientPortal/Account/LogIn'
+
+    with requests.Session() as session:
+        response = session.get(login_page_url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        csrf_token_element = soup.find('input', {'name': '__RequestVerificationToken'})
+        csrf_token = csrf_token_element['value'] if csrf_token_element else None
+
+        if csrf_token is None:
+            print('CSRF token not found.')
+            return None
+
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Encoding': 'gzip, deflate, br, zstd',
+            'Accept-Language': 'pl,en;q=0.7,en-US;q=0.3',
+            'Connection': 'keep-alive',
+            'Content-Type': 'application/json',
+            'Origin': 'https://portalpacjenta.luxmed.pl',
+            'Referer': login_page_url,
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+
+        login_payload = {
+            'Login': luxmed_login,
+            'Password': luxmed_password,
+            '__RequestVerificationToken': csrf_token
+        }
+
+        response = session.post(authentication_url, json=login_payload, headers=headers)
+
+        try:
+            response_json = response.json()
+        except ValueError:
+            print('Failed to parse JSON response. Response content:', response.text)
+            return None
+
+        if response_json.get('succeded') and response_json.get('token'):
+            print('Login successful.')
+            return session
+
+        print('Login failed:', response_json.get('errorMessage'))
         return None
 
 
@@ -69,7 +104,7 @@ def log_out(session):
     :return
     """
     r = session.get('https://portalpacjenta.luxmed.pl/PatientPortal/Account/LogOut')
-    if 'bezpiecznie wylogowany' in r.text:
+    if 'bezpiecznie wylogowany' in r.text.lower():
         print('Logout succeed')
     else:
         print('Logout failed')
