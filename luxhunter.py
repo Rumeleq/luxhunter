@@ -72,9 +72,9 @@ def log_out(session):
     """
     r = session.get('https://portalpacjenta.luxmed.pl/PatientPortal/Account/LogOut')
     if 'bezpiecznie wylogowany' in r.text:
-        print 'Logout succeed'
+        print('Logout succeed')
     else:
-        print 'Logout failed'
+        print('Logout failed')
 
 
 def find(session, service_id, date_from, date_to, doctor_id='0', city_id='5', clinic_id='', time_option='Any'):
