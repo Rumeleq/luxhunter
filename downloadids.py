@@ -60,8 +60,9 @@ def download_ids(session):
 
 def dict_to_string(adict):
     out = ''
-    for k, v in adict.iteritems():
+    for k, v in adict.items():
         out += k + '\t' + v + '\n'
+    print(adict.items())
     return out
 
 

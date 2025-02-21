@@ -97,17 +97,12 @@ def log_in(luxmed_login: str, luxmed_password: str):
         return None
 
 
-def log_out(session):
+def log_out(session: requests.Session):
     """
-    Log out from Luxmed's patient portal
-    :param session: Session object
-    :return
+    Log out from Luxmed's patient portal using a session context.
+    :return: None
     """
-    r = session.get('https://portalpacjenta.luxmed.pl/PatientPortal/Account/LogOut')
-    if 'bezpiecznie wylogowany' in r.text.lower():
-        print('Logout succeed')
-    else:
-        print('Logout failed')
+    session.get('https://portalpacjenta.luxmed.pl/PatientPortal/Account/LogOut')
 
 
 def find(session, service_id, date_from, date_to, doctor_id='0', city_id='5', clinic_id='', time_option='Any'):
