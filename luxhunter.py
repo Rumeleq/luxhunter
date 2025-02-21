@@ -41,7 +41,7 @@ def write_to_file(text, file_path='log.txt'):
         f.write(text)
 
 
-def log_in(luxmed_login: str, luxmed_password: str):
+def log_in(luxmed_login: str, luxmed_password: str) -> requests.Session:
     """
     Log in to Luxmed's patient portal.
 
@@ -105,7 +105,7 @@ def log_out(session: requests.Session):
     session.get('https://portalpacjenta.luxmed.pl/PatientPortal/Account/LogOut')
 
 
-def find(session, service_id, date_from, date_to, doctor_id='0', city_id='5', clinic_id='', time_option='Any'):
+def find(session, service_id, date_from, date_to, doctor_id='0', city_id='1', clinic_id='', time_option='Any'):
     """
     Find appointment.
     :param session: session object is created during log in and passed to the function
@@ -119,32 +119,26 @@ def find(session, service_id, date_from, date_to, doctor_id='0', city_id='5', cl
     :return:
     """
 
-    main_page_url = 'https://portalpacjenta.luxmed.pl/PatientPortal/'
-    find_page_url = 'https://portalpacjenta.luxmed.pl/PatientPortal/Reservations/Reservation/Find'
+    find_page_url = 'https://portalpacjenta.luxmed.pl/PatientPortal/NewPortal/Page/Reservation/Results'
+
+    date_from = '2025-02-21'
+    date_to = '2025-03-06'
 
     search_params = {
-        'DateOption': 'SelectedDate',
-        'CityId': city_id,
-        'ClinicId': clinic_id,
-        'ServiceId': service_id,
-        'DoctorMultiIdentyfier': "%s-%s-%s" % (doctor_id, service_id, clinic_id),
-        'PayedOption': 'Free',
-        'SearchFirstFree': 'false',
-        'DateFrom': date_from,
-        'DateTo': date_to,
-        'TimeOption': time_option}
+        'cityId': city_id,
+        'doctorIds': [],
+        'facilityIds': [],
+        'languageId': 10,
+        'partsOfDay': {0: '0'},
+        'referralTypeId': None,
+        'searchDateFrom': date_from,
+        'searchDateTo': date_to,
+        'serviceVariantId': 4468,
+    }
 
     print(search_params)
 
-    r = session.get(main_page_url)
-
-    parser = etree.HTMLParser()
-    tree = etree.fromstring(r.text, parser)
-
-    verification_token = tree.xpath('//form//input[@name="__RequestVerificationToken"]/@value')
-    search_params['__RequestVerificationToken'] = verification_token[0]
-
-    r = session.post(find_page_url, data=search_params)
+    r = session.post(find_page_url, json=search_params)
     # wtf(r.text)
 
     if is_appointment_available(r.text):
@@ -161,9 +155,8 @@ def is_appointment_available(html_page):
     :param html_page: web page source
     :return: True if you are lucky
     """
-    if 'Brak dostępnych terminów w dniach'.decode('utf-8') in unicode(html_page):
-        return False
-    if 'Niestety, nie dysponujemy terminami wizyt we wskazanym zakresie w rezerwacji'.decode('utf-8') in html_page:
+    soup = BeautifulSoup(html_page, 'html.parser')
+    if 'nie ma dostępnych terminów' in soup.text:
         return False
     else:
         return True
@@ -189,20 +182,20 @@ def main():
     parser = argparse.ArgumentParser(description='Luxmed appointment availability checker.')
     parser.add_argument('lxlogin', help='Luxmend account login')
     parser.add_argument('lxpass', help='Luxmed account password')
-    parser.add_argument('email', help='email address')
+    # parser.add_argument('email', help='email address')
     parser.add_argument('datefrom', help='Date format dd-mm-yyyy')
     parser.add_argument('dateto', help='Date format dd-mm-yyyy')
     parser.add_argument('serviceid', help='Type of specialist. ID should be taken from csv in repository.')
-    parser.add_argument('doctorid', help='Doctor id. ID should be take from csv in repository.')
-    parser.add_argument('cityid', help='City id. ID should be taken from csv in repository.')
-    parser.add_argument('clinicid', help='Clinic id. ID should be taken from csv in repository.')
-    parser.add_argument('timeoption', help='Time option from range: Morning, Afternoon, Evening or Any')
+    # parser.add_argument('doctorid', help='Doctor id. ID should be take from csv in repository.')
+    # parser.add_argument('cityid', help='City id. ID should be taken from csv in repository.')
+    # parser.add_argument('clinicid', help='Clinic id. ID should be taken from csv in repository.')
+    # parser.add_argument('timeoption', help='Time option from range: Morning, Afternoon, Evening or Any')
     args = parser.parse_args()
 
     session = log_in(args.lxlogin, args.lxpass)
-    isav = find(session, service_id=args.serviceid, date_from=args.datefrom, date_to=args.dateto, doctor_id=args.doctorid, city_id=args.cityid, clinic_id=args.clinicid, time_option=args.timeoption)
-    if isav:
-        notify('Wizyta znaleziona dla uzytkownika: %s' % args.lxlogin, args.email)
+    isav = find(session, service_id=args.serviceid, date_from=args.datefrom, date_to=args.dateto)
+    # if isav:
+    #    notify('Wizyta znaleziona dla uzytkownika: %s' % args.lxlogin, args.email)
     log_out(session)
 
 
