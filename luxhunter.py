@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-__author__ = 'apqlzm'
-
 import requests
 import codecs
 from lxml import etree
@@ -14,6 +11,7 @@ def notify(email_text, dst_email):
     """
     Function sends emails.
     :param email_text:
+    :param dst_email:
     :return:
     """
     smtpobj = smtplib.SMTP_SSL('poczta.o2.pl', 465)
@@ -30,15 +28,15 @@ def notify(email_text, dst_email):
     smtpobj.quit()
 
 
-def wtf(text, file_path='log.txt'):
+def write_to_file(text, file_path='log.txt'):
     """
     Write To File
     :param text: text which will be written to file
+    :param file_path: file path
     :return:
     """
-    out = codecs.open(file_path, mode='w', encoding='utf-8')
-    out.write(unicode(text))
-    out.close()
+    with codecs.open(file_path, 'a', 'utf-8') as f:
+        f.write(text)
 
 
 def log_in(login, password):
@@ -57,10 +55,10 @@ def log_in(login, password):
     r = s.post('https://portalpacjenta.luxmed.pl/PatientPortal/Account/LogIn', data=log_in_params)
 
     if 'Zarezerwuj' in r.text:
-        print 'Login succeed'
+        print('Login succeed')
         return s
     else:
-        print 'Login failed'
+        print('Login failed')
         return None
 
 
@@ -106,7 +104,7 @@ def find(session, service_id, date_from, date_to, doctor_id='0', city_id='5', cl
         'DateTo': date_to,
         'TimeOption': time_option}
 
-    print search_params
+    print(search_params)
 
     r = session.get(main_page_url)
 
@@ -120,12 +118,11 @@ def find(session, service_id, date_from, date_to, doctor_id='0', city_id='5', cl
     # wtf(r.text)
 
     if is_appointment_available(r.text):
-        print 'Hurray! Visit has been found :)'
+        print('Hurray! Visit has been found :)')
         return True
     else:
-        print 'Pity :( Visit has not been found.'
+        print('Pity :( Visit has not been found.')
         return False
-
 
 
 def is_appointment_available(html_page):
@@ -144,6 +141,7 @@ def is_appointment_available(html_page):
 
 def parse_results(html_page):
     pass
+
 
 def book_appointment():
     pass
@@ -176,6 +174,7 @@ def main():
     if isav:
         notify('Wizyta znaleziona dla uzytkownika: %s' % args.lxlogin, args.email)
     log_out(session)
+
 
 if __name__ == '__main__':
     main()

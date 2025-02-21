@@ -4,6 +4,7 @@ import luxhunter
 import argparse
 from lxml import etree
 
+
 def download_ids(session):
     # cityid, postid, serviceid
     main_page_url = 'https://portalpacjenta.luxmed.pl/PatientPortal/'
@@ -51,12 +52,12 @@ def download_ids(session):
             service_id = service_element.get('value')
             services[service_name] = service_id
 
-    print '*** CITIES ***'
-    print dict_to_string(cities)
-    print '*** CLINICS ***'
-    print dict_to_string(clinics)
-    print '*** SERVICES ***'
-    print dict_to_string(services)
+    print('*** CITIES ***')
+    print(dict_to_string(cities))
+    print('*** CLINICS ***')
+    print(dict_to_string(clinics))
+    print('*** SERVICES ***')
+    print(dict_to_string(services))
 
 
 def dict_to_string(adict):
@@ -75,6 +76,7 @@ def main():
     session = luxhunter.log_in(args.lxlogin, args.lxpass)
     download_ids(session)
     luxhunter.log_out(session)
+
 
 if __name__ == '__main__':
     main()
